@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diagnóstico de cadena de valor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#eef1f5;--card:#fff;--ink:#14213d;--mut:#556074;--line:#d3dae5;--acc:#0b6e6e;--onacc:#fff;--soft:#e3f1f0;--c1:#b83128;--c2:#a86300;--c3:#1b7a62;--c4:#0b4f38;
+--hf:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;--bf:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1620;--card:#162231;--ink:#e8edf5;--mut:#9aa7ba;--line:#2a3a4e;--acc:#4cc2bd;--onacc:#06201f;--soft:#12333a;--c1:#d9534a;--c2:#c27a10;--c3:#2a9d80;--c4:#1c7a57;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1620;--card:#162231;--ink:#e8edf5;--mut:#9aa7ba;--line:#2a3a4e;--acc:#4cc2bd;--onacc:#06201f;--soft:#12333a;--c1:#d9534a;--c2:#c27a10;--c3:#2a9d80;--c4:#1c7a57;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--bf)}
+h1,h2,h3{font-family:var(--hf);line-height:1.15;margin:0 0 .5em}
+h1{font-size:clamp(1.9rem,5vw,3rem);font-weight:800;letter-spacing:-.02em}
+h2{font-size:1.6rem;font-weight:800}h3{font-size:1.1rem;font-weight:600}
+p{margin:.4em 0;max-width:70ch}
+.wrap{max-width:1040px;margin:0 auto;padding:0 18px 60px}
+header.top{padding:34px 0 14px}
+header.top p{color:var(--mut);font-size:1.05rem}
+nav.tabs{display:flex;gap:6px;overflow-x:auto;border-bottom:2px solid var(--line);margin:10px 0 24px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5}
+nav.tabs button{flex:0 0 auto;background:none;border:0;border-bottom:3px solid transparent;margin-bottom:-2px;padding:12px 14px;font:600 .95rem var(--bf);color:var(--mut);cursor:pointer}
+nav.tabs button[aria-selected="true"]{color:var(--acc);border-color:var(--acc)}
+nav.tabs button:disabled{opacity:.4;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px;margin-bottom:18px}
+label.f{display:block;font-weight:600;margin:14px 0 4px}
+input[type=text],input[type=number],select{width:100%;max-width:420px;padding:10px 12px;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px}
+.btn{background:var(--acc);color:var(--onacc);border:0;border-radius:6px;padding:11px 20px;font:600 1rem var(--bf);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px}
+.chip{display:inline-block;padding:4px 12px;border-radius:99px;background:var(--soft);color:var(--acc);font-weight:600;font-size:.9rem}
+.err{color:var(--c1);font-size:.9rem;min-height:1.2em}
+.bar{height:8px;background:var(--line);border-radius:9px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--acc);transition:width .3s}
+.q{border:0;padding:0;margin:0 0 22px}
+.q legend{font-weight:500;margin-bottom:8px;padding:0}
+.lk{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-width:420px}
+.lk label{cursor:pointer}
+.lk input{position:absolute;opacity:0}
+.lk span{display:block;text-align:center;padding:10px 0;border:1px solid var(--line);border-radius:6px;font-weight:600;background:var(--bg)}
+.lk input:checked+span{background:var(--acc);color:var(--onacc);border-color:var(--acc)}
+.lk input:focus-visible+span{outline:3px solid var(--acc);outline-offset:2px}
+.scale{font-size:.85rem;color:var(--mut);display:flex;flex-wrap:wrap;gap:4px 14px}
+.lens{background:var(--soft);border-left:4px solid var(--acc);padding:10px 14px;border-radius:0 6px 6px 0;margin:10px 0 20px;font-size:.95rem}
+/* cadena */
+.chain{margin:14px 0}
+.sup{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px}
+.pri{display:grid;grid-template-columns:repeat(5,1fr) 54px;gap:4px}
+.node{color:#fff;padding:14px 12px;display:flex;flex-direction:column;gap:2px;justify-content:center;min-height:84px;border-radius:6px}
+.node b{font-size:.82rem;font-weight:600;line-height:1.2}.node span{font-family:var(--hf);font-size:1.5rem;font-weight:800}
+.pri .node{border-radius:0;padding-left:22px;clip-path:polygon(0 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,0 100%,16px 50%)}
+.pri .node:first-child{clip-path:polygon(0 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,0 100%)}
+.mg{writing-mode:vertical-rl;text-align:center;font:600 .8rem var(--bf);color:var(--mut);align-self:center}
+.k1{background:var(--c1)}.k2{background:var(--c2)}.k3{background:var(--c3)}.k4{background:var(--c4)}
+.big{display:flex;gap:20px;flex-wrap:wrap;align-items:center}
+.big .n{font:800 3.4rem var(--hf);line-height:1}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-weight:600;color:var(--mut)}
+.tw{overflow-x:auto}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.mini{border:1px solid var(--line);border-radius:8px;padding:14px;background:var(--bg)}
+.h{font-weight:600;color:var(--acc)}
+.sl{display:grid;grid-template-columns:150px 1fr 90px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.sl input{width:100%;accent-color:var(--acc)}
+.sl small{color:var(--mut)}
+.kpi{font:800 1.8rem var(--hf)}
+.pos{color:var(--c3)}.neg{color:var(--c1)}
+.note{font-size:.85rem;color:var(--mut)}
+section[hidden]{display:none}
+@media screen and (max-width:720px){
+ .sup{grid-template-columns:1fr 1fr}
+ .pri{grid-template-columns:1fr}.pri .node,.pri .node:first-child{clip-path:none;border-radius:6px;padding-left:12px;min-height:60px;flex-direction:row;align-items:center;justify-content:space-between}
+ .mg{writing-mode:horizontal-tb}
+ .sl{grid-template-columns:1fr}
+}
+@media print{nav.tabs,.row,.btn{display:none}section[hidden]{display:block}body{background:#fff}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* ===== Mejora visual v2 ===== */
+:root{--hero:#0c2540;--hero2:#123a5c;--sh:0 1px 2px rgba(15,37,64,.06),0 8px 24px rgba(15,37,64,.08);--r:14px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--hero:#0a1d30;--hero2:#0f3550;--sh:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35)}}
+.print-only{display:none}
+body{background:radial-gradient(1200px 500px at 85% -120px,var(--soft),transparent 70%),var(--bg);background-attachment:fixed}
+header.top{position:relative;overflow:hidden;margin-top:18px;padding:40px 36px 36px;border-radius:20px;background:linear-gradient(120deg,var(--hero),var(--hero2));color:#fff;box-shadow:var(--sh)}
+header.top h1{color:#fff;max-width:14ch;position:relative;z-index:1}
+header.top p{color:#c6d6e6;max-width:48ch;position:relative;z-index:1}
+.hero-chain{position:absolute;right:-30px;top:50%;transform:translateY(-50%);display:flex;opacity:.95}
+.hero-chain i{width:92px;height:150px;margin-left:-22px;clip-path:polygon(0 0,70% 0,100% 50%,70% 100%,0 100%,30% 50%);animation:slide .9s cubic-bezier(.2,.8,.2,1) both}
+.hero-chain i:nth-child(1){background:var(--c1);animation-delay:.05s}.hero-chain i:nth-child(2){background:var(--c2);animation-delay:.15s}.hero-chain i:nth-child(3){background:#5a7a99;animation-delay:.25s}.hero-chain i:nth-child(4){background:var(--c3);animation-delay:.35s}.hero-chain i:nth-child(5){background:var(--c4);animation-delay:.45s}
+@keyframes slide{from{opacity:0;transform:translateX(60px)}}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}}
+@keyframes pop{from{opacity:0;transform:scale(.92)}}
+nav.tabs{border:0;padding:10px 0;gap:8px;margin:14px 0 22px;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(8px)}
+nav.tabs button{border:1px solid var(--line);border-radius:99px;margin:0;padding:9px 18px;background:var(--card);transition:all .2s}
+nav.tabs button:not(:disabled):hover{border-color:var(--acc);color:var(--acc);transform:translateY(-1px)}
+nav.tabs button[aria-selected="true"]{background:var(--acc);border-color:var(--acc);color:var(--onacc);box-shadow:0 4px 12px rgba(11,110,110,.3)}
+section:not([hidden]){animation:rise .35s ease both}
+.card{border-radius:var(--r);box-shadow:var(--sh);padding:28px;border-top:4px solid var(--acc)}
+.card h2{font-size:1.75rem}
+input[type=text],input[type=number],select{border-width:2px;border-radius:10px;padding:12px 14px;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus{border-color:var(--acc);box-shadow:0 0 0 4px var(--soft);outline:none}
+.btn{border-radius:10px;padding:12px 24px;box-shadow:0 4px 12px rgba(11,110,110,.25);transition:transform .15s,box-shadow .15s,filter .15s}
+.btn:not(:disabled):hover{transform:translateY(-2px);filter:brightness(1.08);box-shadow:0 8px 18px rgba(11,110,110,.3)}
+.btn:not(:disabled):active{transform:translateY(0)}
+.btn.ghost{box-shadow:none;border-width:2px}
+.chip{padding:6px 14px}
+.bar{height:12px;border-radius:99px}.bar i{border-radius:99px;background:linear-gradient(90deg,var(--c2),var(--acc))}
+.q{padding:14px 16px;border:1px solid var(--line);border-radius:12px;margin-bottom:14px;background:var(--bg)}
+.q legend{padding:0 6px;font-weight:600}
+.lk{max-width:480px}
+.lk span{padding:13px 0;border-radius:10px;border-width:2px;background:var(--card);transition:all .15s}
+.lk label:hover span{border-color:var(--acc);transform:translateY(-2px)}
+.lk input:checked+span{color:#fff;transform:translateY(-2px);box-shadow:0 4px 10px rgba(0,0,0,.2)}
+.lk label:nth-child(1) input:checked+span{background:var(--c1);border-color:var(--c1)}.lk label:nth-child(2) input:checked+span{background:var(--c2);border-color:var(--c2)}.lk label:nth-child(3) input:checked+span{background:#5a7a99;border-color:#5a7a99}.lk label:nth-child(4) input:checked+span{background:var(--c3);border-color:var(--c3)}.lk label:nth-child(5) input:checked+span{background:var(--c4);border-color:var(--c4)}
+.lens{border-radius:0 10px 10px 0;border-left-width:5px}
+.node{box-shadow:0 3px 8px rgba(0,0,0,.18);transition:transform .2s,filter .2s}
+.node:hover{transform:translateY(-4px);filter:brightness(1.1)}
+#res .node{animation:pop .5s cubic-bezier(.2,.8,.2,1) both}
+#res .sup .node:nth-child(2),#res .pri .node:nth-child(2){animation-delay:.08s}#res .sup .node:nth-child(3),#res .pri .node:nth-child(3){animation-delay:.16s}#res .sup .node:nth-child(4),#res .pri .node:nth-child(4){animation-delay:.24s}#res .pri .node:nth-child(5){animation-delay:.32s}
+.big{padding:18px;border-radius:var(--r);background:var(--soft);margin:12px 0}
+.big .n{width:128px;height:128px;border-radius:50%;display:grid;place-items:center;isolation:isolate;position:relative;font-size:2.5rem;background:conic-gradient(var(--acc) calc(var(--p)*1%),var(--line) 0)}
+.big .n::before{content:"";position:absolute;inset:11px;border-radius:50%;background:var(--card);z-index:-1}
+thead th{background:var(--soft);color:var(--ink);position:sticky;top:0}
+th:first-child{border-radius:8px 0 0 8px}th:last-child{border-radius:0 8px 8px 0}
+tbody tr{transition:background .15s}tbody tr:nth-child(even){background:color-mix(in srgb,var(--soft) 40%,transparent)}tbody tr:hover{background:var(--soft)}
+.mini{border-radius:12px;background:var(--card);box-shadow:var(--sh);transition:transform .2s}.mini:hover{transform:translateY(-3px)}
+#dg .grid3:first-of-type .mini{border-top:4px solid var(--c1)}
+#simout .mini{border-top:4px solid var(--acc)}
+.sl{border-radius:10px;padding:10px 12px;transition:background .15s}.sl:hover{background:var(--soft)}
+.sl input[type=range]{height:30px;cursor:pointer}
+.kpi{color:var(--acc)}
+.lens b{color:var(--acc)}
+@media screen and (max-width:720px){header.top{padding:26px 22px}.hero-chain{display:none}header.top h1{max-width:none}.card{padding:20px}.big .n{width:104px;height:104px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+/* ===== Impresión ===== */
+@page{size:A4;margin:14mm;@bottom-center{content:"Página " counter(page);font:9pt sans-serif;color:#555}}
+@media print{
+:root,:root:not([data-theme="light"]),:root[data-theme="dark"]{--bg:#fff;--card:#fff;--ink:#111;--mut:#444;--line:#c9d1db;--acc:#0b6e6e;--onacc:#fff;--soft:#e8f3f2;--c1:#b83128;--c2:#a86300;--c3:#1b7a62;--c4:#0b4f38;--sh:none;color-scheme:light}
+*{-webkit-print-color-adjust:exact;print-color-adjust:exact;animation:none!important;transition:none!important}
+body{background:#fff!important;font-size:10.5pt;color:#111}
+.wrap{max-width:none;padding:0}
+nav.tabs,.row,.btn,#s1,#s2,#sims,.hero-chain,header.top>p:not(.print-only){display:none!important}
+#s3,#s4,#s5{display:block!important}
+#s5>.card:first-child{display:none!important}
+header.top{background:none!important;color:#111;box-shadow:none;border-radius:0;border-bottom:3px solid #0b6e6e;padding:0 0 8px;margin:0 0 14px}
+header.top h1{color:#0c2540;font-size:22pt;max-width:none}
+.print-only{display:block!important;color:#444!important;font-size:10pt;margin:0 0 4px!important}
+.card{box-shadow:none;border:1px solid #c9d1db;border-top:4px solid #0b6e6e;padding:14px 16px;margin-bottom:12px}
+#s4{break-before:page}
+h2,h3{break-after:avoid}
+tr,.mini,.chain,.lens,.big{break-inside:avoid}
+.grid3{grid-template-columns:repeat(3,1fr)}
+.mini{box-shadow:none}
+.node{box-shadow:none;min-height:70px}.node b{font-size:8.5pt}.node span{font-size:16pt}
+thead th{position:static}
+.tw{overflow:visible}
+table{font-size:9.5pt}
+.big .n{width:96px;height:96px;font-size:20pt}
+.note{font-size:8.5pt}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+ <div class="hero-chain" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+ <p class="print-only" id="pdate"></p>
+ <h1>Diagnóstico de cadena de valor</h1>
+ <p>Evalúa las nueve actividades de la cadena de Porter, descubre tus cuellos de botella, recibe un enfoque estratégico y simula el efecto de mejorar.</p>
+</header>
+<nav class="tabs" role="tablist" id="tabs"></nav>
+
+<section id="s1">
+ <div class="card">
+  <h2>Datos de la empresa</h2>
+  <p>Con el tamaño adaptamos el tono del cuestionario y las recomendaciones.</p>
+  <label class="f" for="co">Nombre de la empresa</label>
+  <input type="text" id="co" autocomplete="organization">
+  <label class="f" for="sec">Sector industrial</label>
+  <select id="sec"><option value="">Elige un sector</option><option>Manufactura</option><option>Comercio</option><option>Servicios profesionales</option><option>Tecnología y software</option><option>Agroindustria</option><option>Construcción</option><option>Salud y educación</option><option>Turismo y restauración</option><option>Transporte y logística</option><option>Otro</option></select>
+  <label class="f" for="nw">Número total de trabajadores</label>
+  <input type="number" id="nw" min="1" step="1" inputmode="numeric">
+  <div class="row"><span class="chip" id="segchip">Escribe el número de trabajadores</span></div>
+  <p class="note">Micro: 1 a 10. Pequeña: 11 a 50. Mediana: 51 a 250. Gran empresa: más de 250.</p>
+  <p class="err" id="e1" role="alert"></p>
+  <div class="row"><button class="btn" id="go2">Comenzar cuestionario</button></div>
+ </div>
+</section>
+
+<section id="s2" hidden>
+ <div class="card">
+  <div class="row" style="margin:0 0 10px;justify-content:space-between"><h2 id="qt" style="margin:0"></h2><span class="chip" id="qk"></span></div>
+  <div class="bar" aria-hidden="true"><i id="pb"></i></div>
+  <div class="lens" id="lens"></div>
+  <p class="scale" id="scale"></p>
+  <div id="qs" style="margin-top:16px"></div>
+  <div class="row"><button class="btn ghost" id="prev">Anterior</button><button class="btn" id="next">Siguiente</button></div>
+ </div>
+</section>
+
+<section id="s3" hidden>
+ <div class="card"><h2>Resultados</h2><div id="res"></div></div>
+</section>
+
+<section id="s4" hidden>
+ <div class="card"><h2>Diagnóstico estratégico</h2><div id="dg"></div></div>
+</section>
+
+<section id="s5" hidden>
+ <div class="card">
+  <h2>Simulador de mejoras</h2>
+  <p>Mueve cada deslizador para ver cuánto subiría tu puntuación si mejoras esa actividad. El modelo de margen es ilustrativo: sirve para comparar escenarios, no para pronosticar.</p>
+  <div class="grid3" style="margin-top:12px">
+   <div><label class="f" for="rev" style="margin-top:0">Ingresos anuales</label><input type="number" id="rev" value="1000000" min="0"></div>
+   <div><label class="f" for="cst" style="margin-top:0">Costos totales anuales</label><input type="number" id="cst" value="850000" min="0"></div>
+  </div>
+  <div class="row"><button class="btn ghost" id="auto">Aplicar mejora sugerida (+1 en cuellos de botella)</button><button class="btn ghost" id="rst">Reiniciar</button></div>
+  <div id="sims" style="margin-top:12px"></div>
+ </div>
+ <div class="card"><h3>Escenario simulado</h3><div id="simout"></div></div>
+</section>
+<div class="row" style="justify-content:center"><button class="btn ghost" id="print">Imprimir informe</button><button class="btn ghost" id="again">Nuevo diagnóstico</button></div>
+<p class="note" style="text-align:center">Herramienta de apoyo basada en el modelo de Michael Porter. No reemplaza una asesoría personalizada.</p>
+</div>
+
+<script>
+const L=[
+{id:"li",g:"P",n:"Logística interna",q:["Recibimos, inspeccionamos y almacenamos los insumos con procedimientos claros y pocas pérdidas o daños.","Controlamos los inventarios con registros confiables, evitando tanto faltantes como excedentes.","Planificamos la entrada de insumos de forma coordinada con la producción y con los proveedores."],
+ s:"Aquí importa la agilidad: pocas personas deben poder cubrir la recepción y el inventario sin perder control.",l:"Se evalúa la formalización: procedimientos documentados, indicadores de inventario y sistemas integrados.",
+ a:["Haz un conteo semanal de los 10 insumos más críticos en una hoja de cálculo.","Define stock mínimo y punto de pedido por insumo clave.","Integra inventario, compras y producción en un solo sistema con indicadores de rotación."]},
+{id:"op",g:"P",n:"Operaciones",q:["Nuestros procesos productivos o de servicio están estandarizados y producen resultados consistentes.","Medimos la calidad y corregimos los defectos antes de que lleguen al cliente.","Mantenemos los equipos y el uso de la capacidad de forma preventiva, con pocas paradas imprevistas."],
+ s:"Se valora la polivalencia: que el equipo domine varias tareas y el proceso se adapte rápido a cada pedido.",l:"Se evalúan jerarquías claras, certificaciones de calidad y mejora continua formalizada.",
+ a:["Documenta en una página los 3 procesos que más repiten errores.","Implanta un plan de mantenimiento preventivo y un registro de defectos.","Adopta mejora continua (Lean o Six Sigma) con metas de productividad medibles."]},
+{id:"le",g:"P",n:"Logística externa",q:["Procesamos los pedidos con rapidez y casi sin errores.","Entregamos a los clientes en el plazo y las condiciones prometidas.","Nuestros canales de distribución cubren bien el mercado objetivo y los gestionamos activamente."],
+ s:"Basta con pocos canales bien atendidos; lo clave es cumplir lo prometido en cada entrega.",l:"Se evalúan la red de distribución, la trazabilidad de pedidos y los acuerdos de nivel de servicio.",
+ a:["Mide el porcentaje de entregas a tiempo y avisa al cliente de cada estado.","Revisa rutas y costos de transporte; evalúa un operador logístico para zonas lejanas.","Diseña una red omnicanal con trazabilidad en tiempo real y acuerdos de servicio con socios."]},
+{id:"mk",g:"P",n:"Marketing y ventas",q:["Fijamos precios con base en costos, valor percibido y competencia.","Nuestras acciones de promoción y la fuerza de ventas generan clientes nuevos de forma constante.","Nuestra marca es reconocida y claramente diferente de la competencia."],
+ s:"El voz a voz, las redes sociales y la relación directa con el cliente pesan más que grandes presupuestos.",l:"Se evalúan planes de marketing, gestión del embudo comercial y valor de marca.",
+ a:["Define a quién le vendes y qué te distingue en una frase; úsala en todo canal.","Crea un proceso de ventas con seguimiento (CRM sencillo) y metas por vendedor.","Construye una estrategia de marca y de precios basada en segmentos y datos de mercado."]},
+{id:"ps",g:"P",n:"Servicio posventa",q:["Atendemos las consultas y los reclamos con rapidez y soluciones efectivas.","Ofrecemos garantías y soporte que elevan el valor del producto o servicio.","Medimos la satisfacción y tenemos acciones para que los clientes vuelvan."],
+ s:"Conoces a tus clientes por su nombre: usa esa cercanía como ventaja.",l:"Se evalúan centros de atención, indicadores como NPS y programas de fidelización.",
+ a:["Llama o escribe a tus mejores clientes tras cada venta y registra sus quejas.","Establece un protocolo con plazos de respuesta y una encuesta breve de satisfacción.","Lanza un programa de fidelización y un centro de experiencia con indicadores (NPS, retención)."]},
+{id:"in",g:"S",n:"Infraestructura",q:["Nuestra gestión administrativa y financiera es ordenada y entrega información útil para decidir.","Planificamos la estrategia con metas claras y las revisamos con regularidad.","Cumplimos las obligaciones legales y gestionamos los riesgos con apoyo adecuado."],
+ s:"Basta con orden: contabilidad al día, flujo de caja y metas simples revisadas cada mes.",l:"Se evalúan gobierno corporativo, control interno, cumplimiento normativo y gestión de riesgos.",
+ a:["Lleva un flujo de caja semanal y separa las finanzas personales de las del negocio.","Fija metas anuales con 3 indicadores y revisa cada mes.","Establece un directorio o comité, control interno y un sistema de gestión de riesgos."]},
+{id:"rh",g:"S",n:"Recursos humanos",q:["Reclutamos y seleccionamos personal con el perfil que necesitamos.","Capacitamos al equipo y el clima laboral favorece el compromiso.","Contamos con incentivos y acciones de retención que reducen la rotación."],
+ s:"Cada persona cuenta: la polivalencia, la confianza y el reconocimiento directo sostienen el equipo.",l:"Se evalúan descripciones de cargo, evaluación de desempeño, carrera y compensación formal.",
+ a:["Define las 3 funciones clave de cada persona y reconoce logros en público.","Crea un plan anual de capacitación y mide el clima con una encuesta anónima.","Implanta evaluación de desempeño, planes de carrera y compensación variable."]},
+{id:"te",g:"S",n:"Desarrollo tecnológico",q:["Innovamos en procesos, productos o servicios de forma regular.","Usamos herramientas digitales y automatizamos tareas repetitivas.","Dedicamos recursos y tiempo a investigación, desarrollo o mejora tecnológica."],
+ s:"Prefiere herramientas accesibles (nube, apps, hojas automatizadas) antes que grandes inversiones.",l:"Se evalúan arquitectura de sistemas, automatización, presupuesto de I+D y gestión de datos.",
+ a:["Digitaliza facturación y pedidos con herramientas de bajo costo.","Automatiza 2 procesos repetitivos y prueba una mejora de producto por trimestre.","Crea un área de innovación o I+D con presupuesto propio y analítica de datos."]},
+{id:"co",g:"S",n:"Compras y aprovisionamiento",q:["Seleccionamos a los proveedores con criterios de calidad, costo y confiabilidad.","Negociamos precios y condiciones de pago de forma activa.","Formalizamos contratos y evaluamos a los proveedores de forma periódica."],
+ s:"Compara al menos tres cotizaciones y busca compras conjuntas con otros pequeños negocios.",l:"Se evalúan políticas de compras, contratos marco, homologación de proveedores y compras estratégicas.",
+ a:["Pide tres cotizaciones para tus 5 compras principales y negocia plazo de pago.","Califica a tus proveedores por entrega, calidad y precio cada semestre.","Define contratos marco, homologación y una estrategia de abastecimiento con alternativas."]}
+];
+const TIPS={S:"Para tu escala, prioriza soluciones de bajo costo y alto impacto: hojas de cálculo, aplicaciones en la nube y rutinas simples. Evita sistemas corporativos costosos por ahora.",M:"Para tu escala, es momento de formalizar: documentar procesos, definir responsables e indicadores, e invertir en sistemas integrados por etapas.",G:"Para tu escala, la ventaja viene de la gobernanza y la integración: indicadores, políticas, sistemas y gestión del cambio. Evita depender de soluciones informales."};
+const STR={cost:["Liderazgo en costos","Tus fortalezas están en la eficiencia operativa y de abastecimiento. Compite con precio y escala: reduce desperdicios, estandariza y negocia mejor."],dif:["Diferenciación","Tus fortalezas están en marca, servicio, talento o tecnología. Compite con valor percibido: invierte en lo que el cliente no encuentra en otro lado."],foc:["Enfoque o nicho","Tu cercanía y flexibilidad son tu mayor activo. Elige un segmento específico y conviértete en la mejor opción para él."]};
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+let S,done,sim;
+function init(){S={co:"",sec:"",n:0,seg:"",grp:"S",ans:{},i:0};L.forEach(l=>S.ans[l.id]=[0,0,0]);done=false;sim={}}
+function seg(n){return n<=10?["Microempresa","S"]:n<=50?["Pequeña empresa","S"]:n<=250?["Mediana empresa","M"]:["Gran empresa","G"]}
+const sc=id=>S.ans[id].reduce((a,b)=>a+b,0)/3;
+const pct=a=>Math.round((a-1)/4*100);
+const lvl=a=>a<2.5?["Crítico","🔴","k1"]:a<3.5?["En desarrollo","🟡","k2"]:a<4.5?["Competitivo","🟢","k3"]:["Sobresaliente","🟢","k4"];
+const tot=f=>L.reduce((a,l)=>a+f(l.id),0)/L.length;
+function chain(f){const N=l=>{const a=f(l.id);return `<div class="node ${lvl(a)[2]}"><b>${l.n}</b><span>${a.toFixed(1)}</span></div>`};
+ return `<div class="chain"><div class="sup">${L.filter(l=>l.g=="S").map(N).join("")}</div><div class="pri">${L.filter(l=>l.g=="P").map(N).join("")}<div class="mg">Margen</div></div></div>`}
+function tabs(){const t=[["s1","1. Empresa"],["s2","2. Cuestionario"],["s3","3. Resultados"],["s4","4. Diagnóstico"],["s5","5. Simulador"]];
+ $("#tabs").innerHTML=t.map((x,i)=>`<button role="tab" data-go="${x[0]}" ${i>2&&!done||i==2&&!done?"disabled":""}>${x[1]}</button>`).join("")}
+function show(id){$$("section").forEach(s=>s.hidden=s.id!=id);$$("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.go==id));
+ if(id=="s3")results();if(id=="s4")diag();if(id=="s5")simUI();window.scrollTo({top:0})}
+$("#tabs").onclick=e=>{const b=e.target.closest("button");if(b&&!b.disabled)show(b.dataset.go)};
+$("#nw").oninput=()=>{const n=parseInt($("#nw").value);$("#segchip").textContent=n>0?seg(n)[0]+" ("+n+" trabajadores)":"Escribe el número de trabajadores"};
+$("#go2").onclick=()=>{const co=$("#co").value.trim(),sec=$("#sec").value,n=parseInt($("#nw").value);
+ if(!co||!sec||!(n>0)){$("#e1").textContent="Completa el nombre, elige un sector e indica un número de trabajadores mayor que cero.";return}
+ $("#e1").textContent="";const g=seg(n);Object.assign(S,{co,sec,n,seg:g[0],grp:g[1],i:0});show("s2");q()};
+const K=["ins","ope","cal","act","cli","ent","can","dif","gar","fin","leg","per","inn","aut","prov"];
+const SD={
+"Manufactura":["las materias primas y componentes","la producción en planta","los defectos y reprocesos","las máquinas y equipos","clientes y distribuidores","las entregas y despachos","canales de distribución y distribuidores","calidad, costo y cumplimiento","garantías y repuestos","el costeo por producto","las normas laborales, ambientales y de seguridad industrial","operarios y técnicos","procesos, productos y materiales","el control de producción y el inventario","los proveedores de materia prima y maquinaria"],
+"Comercio":["la mercadería","la reposición y las ventas","los errores de atención y de exhibición","los equipos, la tienda y el punto de venta","clientes","las entregas y los cambios","canales de venta (tienda, web y redes)","variedad, precio y experiencia de compra","garantías, cambios y devoluciones","el margen por línea y la rotación","las normas tributarias y de protección al consumidor","vendedores y personal de tienda","formas de vender y de atender","el punto de venta y las compras","los proveedores de mercadería"],
+"Servicios profesionales":["los materiales, datos y recursos de trabajo","la prestación de los servicios","la calidad y los errores de entrega","las herramientas y los sistemas de trabajo","clientes y empresas contratantes","los plazos y entregables","canales de captación y recomendación","especialización y confianza","revisiones y soporte posterior a la entrega","la rentabilidad por proyecto","los contratos, la propiedad intelectual y las normas tributarias","profesionales y consultores","metodologías y formas de entregar el servicio","la gestión de proyectos y la facturación","los proveedores de herramientas, software y subcontratistas"],
+"Tecnología y software":["las licencias, servicios en la nube y equipos","el desarrollo y la operación del software","los errores y la disponibilidad del servicio","la infraestructura y los servidores","usuarios y clientes","los lanzamientos y la entrega de versiones","canales de distribución digital y alianzas","innovación y experiencia de usuario","soporte técnico y actualizaciones","los ingresos recurrentes y el costo por cliente","la protección de datos y las licencias de software","desarrolladores y especialistas","producto, arquitectura y experiencia de usuario","las pruebas, el despliegue y el soporte","los proveedores de nube, licencias y equipos"],
+"Agroindustria":["las semillas, fertilizantes y demás insumos","la siembra, cosecha y poscosecha","el rendimiento y la calidad de la cosecha","la maquinaria, el riego y las instalaciones","compradores y clientes","el acopio, transporte y entrega","canales de venta (acopiadores, mercados y exportación)","calidad, origen y certificaciones","asistencia técnica y reposición por calidad","los costos por campaña","las normas sanitarias, fitosanitarias y ambientales","trabajadores de campo y técnicos","técnicas de cultivo o crianza y poscosecha","el monitoreo de cultivos y el riego","los proveedores de semillas, insumos y maquinaria"],
+"Construcción":["los materiales de construcción","el avance de la obra","los defectos de obra y los retrabajos","la maquinaria y los equipos de obra","clientes y mandantes","los plazos de entrega de obra","canales de contratación y licitación","calidad de obra y cumplimiento de plazos","garantías de obra y mantenimiento","el presupuesto y los costos por obra","los permisos, licencias de obra y normas de seguridad","maestros de obra, técnicos e ingenieros","métodos constructivos y diseño","el seguimiento de obra y la planificación","los proveedores de materiales y subcontratistas"],
+"Salud y educación":["los insumos y materiales clínicos o educativos","la atención o la enseñanza","la calidad de atención o los resultados de aprendizaje","los equipos médicos, aulas y laboratorios","pacientes o estudiantes","los tiempos de atención y los horarios","canales de admisión y atención","prestigio y resultados","seguimiento posterior y orientación continua","los costos por servicio o programa","las regulaciones sectoriales y de acreditación","profesionales de salud o docentes","métodos de atención, enseñanza y diagnóstico","los registros de pacientes o estudiantes y las citas","los proveedores de insumos, equipos y materiales"],
+"Turismo y restauración":["los alimentos, bebidas y suministros","la operación del hotel, restaurante o tour","la calidad del servicio y las quejas","las instalaciones, la cocina y los equipos","huéspedes y comensales","las reservas, llegadas y tiempos de atención","canales de reserva y agencias aliadas","experiencia y reputación en línea","atención durante la estadía y resolución de incidencias","la ocupación y el costo por servicio","las normas sanitarias, de seguridad y de turismo","personal de atención y cocina","experiencias y servicios al visitante","las reservas y la facturación","los proveedores de alimentos, insumos y servicios turísticos"],
+"Transporte y logística":["los repuestos, combustible y neumáticos","la programación de rutas y la operación de la flota","los retrasos, daños y accidentes","la flota de vehículos","clientes y cargadores","los tiempos de recojo y entrega","canales de contratación de servicios","puntualidad y seguridad","seguros, seguimiento y atención de incidentes","el costo por kilómetro o viaje","las normas de tránsito, seguros y seguridad vial","conductores y personal operativo","rutas, flota y trazabilidad","el rastreo de flota y la programación de rutas","los proveedores de combustible, repuestos y vehículos"],
+"Otro":["los insumos y materiales","las operaciones principales","los errores y la calidad","los equipos e instalaciones","clientes","las entregas","canales de venta y distribución","calidad y servicio","garantías y soporte","los costos por actividad","las obligaciones legales","colaboradores","procesos, productos o servicios","la facturación y el seguimiento de pedidos","los proveedores"]};
+const SN={"Manufactura":"se prioriza la eficiencia de planta, la calidad y la cadena de suministro.","Comercio":"se prioriza la rotación de inventario, la experiencia de compra y los márgenes.","Servicios profesionales":"se prioriza la especialización, la reputación y la rentabilidad por proyecto.","Tecnología y software":"se prioriza la velocidad de innovación, la calidad del producto y la retención de usuarios.","Agroindustria":"se prioriza el rendimiento, la trazabilidad, la poscosecha y el acceso a mercados.","Construcción":"se prioriza el cumplimiento de plazos y presupuestos, la seguridad y la calidad de obra.","Salud y educación":"se prioriza la calidad del servicio, el cumplimiento regulatorio y la experiencia de pacientes o estudiantes.","Turismo y restauración":"se prioriza la experiencia del visitante, la reputación y la gestión de la estacionalidad.","Transporte y logística":"se prioriza la puntualidad, la seguridad y el costo por operación.","Otro":"se usan criterios generales de gestión."};
+const TQ={
+li:["Gestionamos {ins} (recepción, inspección y almacenamiento) con procedimientos claros y pocas pérdidas.","Controlamos el inventario de {ins} con registros confiables, evitando faltantes y excedentes.","Coordinamos la llegada de {ins} con {ope} y con los proveedores."],
+op:["Los procesos clave ({ope}) están estandarizados y logran resultados consistentes.","Medimos {cal} y corregimos las fallas antes de que lleguen a los {cli}.","Mantenemos {act} de forma preventiva, con pocas interrupciones imprevistas."],
+le:["Procesamos los pedidos, solicitudes o reservas de los {cli} con rapidez y casi sin errores.","Cumplimos lo prometido en {ent}.","Nuestros {can} cubren bien el mercado objetivo y los gestionamos activamente."],
+mk:["Definimos los precios según costos, valor percibido y competencia.","Nuestras acciones de promoción y ventas atraen de forma constante a nuevos {cli}.","Nuestra marca es reconocida y se distingue de la competencia en {dif}."],
+ps:["Atendemos las consultas y reclamos de los {cli} con rapidez y soluciones efectivas.","Ofrecemos {gar} que elevan el valor para el cliente.","Medimos la satisfacción de los {cli} y tenemos acciones para que vuelvan o nos recomienden."],
+in:["Nuestra gestión financiera es ordenada y mide {fin}, lo que respalda las decisiones.","Planificamos la estrategia con metas claras y las revisamos con regularidad.","Cumplimos con {leg} y gestionamos los riesgos con apoyo adecuado."],
+rh:["Reclutamos y seleccionamos a {per} con el perfil que necesitamos.","Capacitamos a {per} y el clima laboral favorece el compromiso.","Contamos con incentivos y acciones de retención que reducen la rotación de {per}."],
+te:["Innovamos de forma regular en {inn}.","Usamos herramientas digitales y automatizamos tareas repetitivas, por ejemplo en {aut}.","Dedicamos recursos y tiempo a investigación, desarrollo o mejora tecnológica."],
+co:["Seleccionamos a {prov} con criterios de calidad, costo y confiabilidad.","Negociamos activamente precios y condiciones de pago, especialmente de {ins}.","Formalizamos contratos y evaluamos periódicamente a {prov}."]};
+const SQ={
+"Manufactura":[["Aplicamos inspección de recepción y control de lotes a las materias primas críticas.","Calculamos el stock de seguridad y el punto de pedido según la demanda de producción."],["Medimos la eficiencia de planta (OEE) y la capacidad utilizada por línea.","Tenemos mantenimiento preventivo programado y control de calidad dentro del proceso."],["Despachamos con trazabilidad por lote y embalaje que evita daños en tránsito.","Cumplimos los plazos pactados con distribuidores y clientes industriales."],["Conocemos el costo unitario real de cada producto al fijar su precio.","Contamos con distribuidores o fuerza de ventas técnica que posicionan la marca."],["Ofrecemos garantía, repuestos y asistencia técnica oportuna tras la venta.","Analizamos devoluciones y reclamos para corregir sus causas en planta."],["Aplicamos costeo por producto y control presupuestario de la planta.","Cumplimos las normas de seguridad industrial, ambientales y laborales con auditorías."],["Capacitamos a los operarios en varios puestos y en seguridad industrial.","Medimos accidentes, ausentismo y rotación en planta y actuamos sobre ellos."],["Mejoramos procesos con automatización, sensores o manufactura esbelta.","Desarrollamos nuevos productos o mejoras con participación de clientes y planta."],["Tenemos proveedores alternos para materias primas y repuestos críticos.","Negociamos contratos de suministro con precios y plazos de entrega pactados."]],
+"Comercio":[["Rotamos el inventario con clasificación ABC o reglas de reposición que evitan quiebres de stock.","Verificamos la mercadería recibida contra la orden de compra y registramos las mermas."],["Mantenemos tienda o almacén ordenados, con una exhibición que impulsa la compra.","Medimos ventas por metro cuadrado, ticket promedio o tasa de conversión."],["Ofrecemos entrega a domicilio o recojo en tienda con plazos confiables.","Integramos tienda, web y redes para que stock y pedidos coincidan."],["Gestionamos promociones y descuentos sin sacrificar el margen por línea.","Usamos datos de clientes (bases de datos, puntos) para vender más."],["Los cambios, devoluciones y reclamos se resuelven rápido y sin fricción.","Tenemos un programa de fidelización que genera compras recurrentes."],["Controlamos la caja diaria, las mermas y el capital de trabajo en inventario.","Cumplimos con comprobantes, impuestos y normas de defensa del consumidor."],["El personal de venta conoce los productos y está entrenado en atención al cliente.","Los vendedores tienen incentivos por metas de ventas y de satisfacción."],["Contamos con punto de venta digital, inventario en línea y comercio electrónico.","Analizamos las ventas con herramientas que orientan compras y precios."],["Negociamos descuentos por volumen, plazos de pago y devoluciones con proveedores.","Evitamos depender de un solo proveedor y evaluamos la rotación de lo que compramos."]],
+"Servicios profesionales":[["Reunimos con anticipación la información y los recursos que cada proyecto necesita.","Gestionamos archivos, plantillas y conocimiento para reutilizarlos en nuevos encargos."],["Tenemos metodologías y plantillas estándar que dan calidad uniforme al servicio.","Medimos horas facturables, utilización del equipo y retrabajos por proyecto."],["Entregamos en los plazos acordados y con un cierre formal de cada proyecto.","Informamos avances de forma periódica al cliente durante el servicio."],["Nuestra reputación y las recomendaciones generan la mayoría de los clientes nuevos.","Tenemos propuestas de valor y tarifas claras por especialización o paquete."],["Hacemos seguimiento tras la entrega para medir resultados y detectar nuevas necesidades.","Contamos con contratos recurrentes o acuerdos de soporte con clientes."],["Medimos la rentabilidad por proyecto y por cliente.","Usamos contratos claros que protegen alcance, pagos y propiedad intelectual."],["Desarrollamos las competencias técnicas y blandas de los profesionales con un plan.","Retenemos a los profesionales clave con carrera, reconocimiento o participación."],["Usamos software de gestión de proyectos, control de tiempos y colaboración.","Incorporamos nuevas metodologías o inteligencia artificial para entregar más valor."],["Seleccionamos subcontratistas y proveedores con criterios de calidad y confidencialidad.","Controlamos el costo de herramientas y licencias frente a su uso real."]],
+"Tecnología y software":[["Gestionamos licencias, nube y hardware con inventario y renovaciones planificadas.","Los requerimientos y datos de entrada de cada desarrollo llegan completos y a tiempo."],["Aplicamos metodologías ágiles, revisión de código y pruebas automatizadas.","Medimos disponibilidad, tiempo de resolución de errores y deuda técnica."],["Desplegamos versiones con integración y entrega continua sin interrumpir al usuario.","Distribuimos por canales digitales, tiendas de aplicaciones o socios integradores."],["Tenemos un modelo de precios (suscripción, licencia o por uso) alineado al valor.","Generamos demanda con contenido, pruebas gratuitas y ventas consultivas."],["El soporte técnico resuelve incidentes con tiempos de respuesta medidos.","Medimos retención, abandono (churn) y satisfacción de los usuarios."],["Gestionamos la seguridad de la información y los datos con políticas y auditorías.","Controlamos ingresos recurrentes, costo de adquisición de clientes y flujo de caja."],["Atraemos y retenemos talento técnico con aprendizaje continuo y flexibilidad.","No dependemos de pocas personas clave: el conocimiento está documentado y compartido."],["Invertimos de forma sostenida en I+D y probamos nuevas funcionalidades.","Nuestra arquitectura es escalable y permite integrar nuevas tecnologías."],["Evaluamos riesgos y costos de proveedores de nube y de componentes de código abierto.","Negociamos acuerdos de nivel de servicio (SLA) y precios por volumen con proveedores críticos."]],
+"Agroindustria":[["Planificamos la compra de semillas, fertilizantes y agroquímicos según el calendario de campaña.","Almacenamos insumos y cosechas de modo que se evitan pérdidas por plagas, humedad o calor."],["Aplicamos buenas prácticas agrícolas o pecuarias y registramos las labores de cada campaña.","Medimos rendimiento por hectárea o animal y las pérdidas en poscosecha y transformación."],["Contamos con cadena de frío o transporte adecuado que conserva la calidad del producto.","Coordinamos cosecha, acopio y entrega con los compradores para evitar mermas."],["Conocemos los precios de mercado y vendemos con contratos o acuerdos antes de la cosecha.","Diferenciamos el producto con origen, certificaciones o valor agregado."],["Brindamos asistencia técnica o seguimiento a compradores y productores asociados.","Atendemos reclamos de calidad con trazabilidad hasta el lote o la parcela."],["Controlamos los costos por campaña y planificamos la caja según la estacionalidad.","Cumplimos normas sanitarias, ambientales, laborales y de uso de agua y tierra."],["Capacitamos al personal de campo en técnicas, seguridad y manejo de agroquímicos.","Gestionamos la mano de obra de temporada con condiciones y pagos adecuados."],["Aplicamos riego tecnificado, sensores o agricultura de precisión donde aporta valor.","Probamos nuevas variedades, técnicas de cultivo o procesos de poscosecha."],["Compramos insumos con anticipación o en asociación para bajar costos.","Tenemos proveedores confiables de semillas y maquinaria con soporte y repuestos."]],
+"Construcción":[["Planificamos la llegada de materiales a obra según el cronograma.","Controlamos materiales y herramientas en obra para evitar robos y desperdicios."],["Controlamos avance, costos y calidad de cada obra frente al presupuesto y cronograma.","Aplicamos planes de seguridad y salud en obra, con inspecciones y registro de incidentes."],["Entregamos las obras en el plazo y con las especificaciones del contrato.","Gestionamos la recepción, las observaciones y el cierre de obra con el cliente."],["Obtenemos proyectos por licitaciones, relaciones con clientes o referencias de obras previas.","Fijamos presupuestos con costos reales y márgenes acordes al riesgo."],["Atendemos reclamos de postventa y cumplimos las garantías de obra.","Mantenemos relación con clientes anteriores para nuevos proyectos y referencias."],["Controlamos flujo de caja, valorizaciones y costos por obra de forma periódica.","Gestionamos permisos, licencias, seguros y garantías contractuales sin retrasos."],["Capacitamos y certificamos a maestros, operarios y técnicos en seguridad y oficios.","Retenemos al personal clave entre obras y gestionamos subcontratistas con criterios claros."],["Usamos software de presupuestos, programación o modelado (BIM) en los proyectos.","Aplicamos métodos constructivos o materiales que reducen costo, tiempo o desperdicio."],["Evaluamos subcontratistas y proveedores por calidad, cumplimiento y capacidad financiera.","Compramos materiales con acuerdos de precio y entrega alineados al cronograma de obra."]],
+"Salud y educación":[["Aseguramos el suministro oportuno de medicamentos, insumos o material educativo.","Controlamos vencimientos, almacenamiento y bioseguridad de los insumos."],["Seguimos protocolos o planes curriculares estandarizados y los actualizamos con evidencia.","Medimos resultados clínicos o de aprendizaje y los usamos para mejorar."],["Los pacientes o estudiantes acceden a citas, matrículas y horarios con poca espera.","Coordinamos derivaciones, convenios o plataformas que facilitan el acceso al servicio."],["Comunicamos con claridad nuestra oferta, prestigio y resultados a pacientes o familias.","Contamos con convenios, alianzas o seguros que amplían el acceso."],["Hacemos seguimiento después de la atención o del curso para asegurar continuidad.","Medimos la satisfacción y gestionamos las quejas con respuesta documentada."],["Controlamos los costos por servicio o programa y la sostenibilidad financiera.","Cumplimos regulaciones de licencia, acreditación y protección de datos personales."],["Contamos con profesionales certificados y con formación continua o actualización docente.","Cuidamos la carga laboral y el bienestar para evitar el agotamiento del personal."],["Usamos historia clínica electrónica, aulas virtuales o plataformas de gestión.","Incorporamos nuevas técnicas, telemedicina o metodologías de enseñanza."],["Compramos equipos, medicamentos o materiales con criterios técnicos y de costo.","Verificamos que los proveedores cumplan las normas sanitarias o de calidad exigidas."]],
+"Turismo y restauración":[["Planificamos las compras de alimentos y suministros según la ocupación o reservas previstas.","Controlamos frescura, almacenamiento y mermas de los alimentos."],["Estandarizamos recetas, procesos de servicio y limpieza para una experiencia consistente.","Medimos tiempos de atención, ocupación o rotación de mesas y calidad percibida."],["Gestionamos reservas y canales de venta sin errores ni sobreventa.","Coordinamos traslados, tours o delivery cumpliendo tiempos y condiciones."],["Cuidamos la reputación en plataformas de reseñas y redes sociales.","Ajustamos precios y promociones según temporada y demanda."],["Resolvemos las incidencias durante la estadía o el servicio de forma inmediata.","Mantenemos contacto con huéspedes y comensales para que regresen o recomienden."],["Planificamos el flujo de caja frente a la temporada alta y baja.","Cumplimos normas sanitarias, de seguridad, licencias turísticas y manipulación de alimentos."],["Capacitamos al personal en atención al cliente, idiomas, higiene y seguridad.","Gestionamos turnos, temporadas y rotación con incentivos que retienen al personal."],["Usamos sistemas de reservas, gestión hotelera o pedidos digitales.","Creamos nuevas experiencias, menús o servicios que nos diferencian."],["Seleccionamos proveedores locales o de alimentos con calidad, frescura y entrega confiable.","Negociamos con agencias y plataformas comisiones y condiciones claras."]],
+"Transporte y logística":[["Planificamos la compra de combustible, neumáticos y repuestos según el uso de la flota.","Controlamos el consumo de combustible y el stock de repuestos críticos."],["Aplicamos mantenimiento preventivo programado a cada vehículo, con registro.","Medimos utilización de flota, kilómetros vacíos y tiempos de carga y descarga."],["Entregamos a tiempo y con la carga en buen estado.","Ofrecemos trazabilidad o rastreo de las cargas a los clientes."],["Fijamos tarifas según costo por kilómetro, ruta y nivel de servicio.","Nos diferenciamos por puntualidad, seguridad o especialización en el tipo de carga."],["Gestionamos reclamos por daños, pérdidas o retrasos con respuesta ágil.","Mantenemos relación con clientes recurrentes mediante contratos y seguimiento."],["Controlamos el costo por viaje y la rentabilidad por ruta o cliente.","Cumplimos normas de tránsito, permisos, seguros y seguridad vial."],["Capacitamos a los conductores en manejo seguro y trato al cliente.","Controlamos accidentes, jornadas y rotación de conductores con incentivos."],["Usamos GPS, telemetría o software de rutas para optimizar la operación.","Evaluamos nuevas tecnologías, como vehículos eficientes o documentos digitales."],["Negociamos combustible, seguros y mantenimiento con proveedores confiables.","Renovamos o adquirimos vehículos con criterios de costo total de propiedad."]]};
+function qs(l){const v=SD[S.sec]||SD.Otro,x=(SQ[S.sec]||[])[L.indexOf(l)];return (x?[TQ[l.id][0],...x]:TQ[l.id]).map(t=>t.replace(/\{(\w+)\}/g,(m,k)=>v[K.indexOf(k)]))}
+function q(){const l=L[S.i],a=S.ans[l.id];
+ $("#qt").textContent=l.n;$("#qk").textContent=`Actividad ${S.i+1} de ${L.length} (${l.g=="P"?"primaria":"de soporte"})`;
+ $("#pb").style.width=(S.i/L.length*100)+"%";
+ $("#lens").innerHTML=`<b>${S.seg}:</b> ${S.grp=="S"?l.s:l.l}<br><b>Sector ${S.sec}:</b> preguntas adaptadas; ${SN[S.sec]||SN.Otro}`;
+ $("#scale").innerHTML=["1 Pésimo","2 Deficiente","3 Regular","4 Bueno","5 Excelente"].map(x=>`<span>${x}</span>`).join("");
+ $("#qs").innerHTML=qs(l).map((t,k)=>`<fieldset class="q"><legend>${t}</legend><div class="lk">${[1,2,3,4,5].map(v=>`<label><input type="radio" name="q${k}" value="${v}" ${a[k]==v?"checked":""}><span>${v}</span></label>`).join("")}</div></fieldset>`).join("");
+ $("#prev").disabled=S.i==0;$("#next").textContent=S.i==L.length-1?"Ver resultados":"Siguiente";chk()}
+function chk(){$("#next").disabled=S.ans[L[S.i].id].includes(0)}
+$("#qs").onchange=e=>{const k=+e.target.name.slice(1);S.ans[L[S.i].id][k]=+e.target.value;chk()};
+$("#prev").onclick=()=>{S.i--;q()};
+$("#next").onclick=()=>{if(S.i<L.length-1){S.i++;q();window.scrollTo({top:0})}else{done=true;tabs();show("s3")}};
+function results(){const g=tot(sc),lv=lvl(g),P=tot2("P"),T=tot2("S");
+ const rows=[...L].sort((a,b)=>sc(b.id)-sc(a.id));
+ $("#res").innerHTML=`<p><b>${S.co}</b> (${S.sec}, ${S.seg}, ${S.n} trabajadores)</p>
+ <div class="big"><div class="n" style="--p:${pct(g)}">${g.toFixed(2)}</div><div><h3 style="margin:0">${lv[1]} ${lv[0]}</h3><p style="margin:0">Madurez general: <b>${pct(g)}%</b>. Actividades primarias: ${P.toFixed(2)}. Actividades de soporte: ${T.toFixed(2)}.</p></div></div>
+ <h3 style="margin-top:22px">Tu cadena de valor</h3>${chain(sc)}
+ <h3>Matriz de desempeño (de mayor a menor)</h3><div class="tw"><table><thead><tr><th>Actividad</th><th>Tipo</th><th>Promedio</th><th>Madurez</th><th>Nivel</th></tr></thead><tbody>${rows.map(l=>{const a=sc(l.id);return `<tr><td>${l.n}</td><td>${l.g=="P"?"Primaria":"Soporte"}</td><td>${a.toFixed(2)}</td><td style="min-width:130px"><div class="bar"><i style="width:${pct(a)}%;background:var(--${lvl(a)[2].replace("k","c")})"></i></div> ${pct(a)}%</td><td>${lvl(a)[1]} ${lvl(a)[0]}</td></tr>`}).join("")}</tbody></table></div>
+ <p class="note">Escala de nivel: Crítico (menos de 2,5), En desarrollo (2,5 a 3,49), Competitivo (3,5 a 4,49) y Sobresaliente (4,5 o más). Madurez = (promedio − 1) ÷ 4.</p>
+ <div class="row"><button class="btn" onclick="show('s4')">Ver diagnóstico</button></div>`}
+function tot2(g){const a=L.filter(l=>l.g==g);return a.reduce((s,l)=>s+sc(l.id),0)/a.length}
+const av=ids=>ids.reduce((s,i)=>s+sc(i),0)/ids.length;
+function strat(){const c=av(["li","op","le","co","in"]),d=av(["mk","ps","te","rh"]),f=av(["ps","mk","op","rh"])+(S.grp=="S"?.3:-.3);
+ const m=Math.max(c,d,f);return m==f?"foc":m==d?"dif":"cost"}
+function diag(){const rows=[...L].sort((a,b)=>sc(a.id)-sc(b.id)),bn=rows.slice(0,3),st=strat(),best=rows.slice(-2).reverse();
+ $("#dg").innerHTML=`<h3>Áreas críticas (cuellos de botella)</h3><div class="grid3">${bn.map(l=>{const a=sc(l.id);return `<div class="mini"><div class="h">${lvl(a)[1]} ${l.n}</div><p>Puntaje ${a.toFixed(2)} de 5 (${pct(a)}%). ${S.grp=="S"?l.s:l.l}</p></div>`}).join("")}</div>
+ <h3 style="margin-top:24px">Enfoque estratégico recomendado: ${STR[st][0]}</h3><p>${STR[st][1]}</p><p>Tus actividades más fuertes son <b>${best[0].n}</b> (${sc(best[0].id).toFixed(2)}) y <b>${best[1].n}</b> (${sc(best[1].id).toFixed(2)}); apóyate en ellas.</p>
+ <h3 style="margin-top:24px">Plan de acción</h3><div class="tw"><table><thead><tr><th>Actividad</th><th>Corto plazo (0 a 3 meses)</th><th>Mediano plazo (3 a 12 meses)</th><th>Largo plazo (más de 1 año)</th></tr></thead><tbody>${bn.map(l=>`<tr><td><b>${l.n}</b></td>${l.a.map(x=>`<td>${x}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+ <div class="lens"><b>Consejo para una ${S.seg.toLowerCase()}:</b> ${TIPS[S.grp]}</div>
+ <div class="row"><button class="btn" onclick="show('s5')">Simular mejoras</button></div>`}
+const CW=["li","op","le","co","in"],DW=["mk","ps","te","rh"];
+function simUI(){if(!Object.keys(sim).length)L.forEach(l=>sim[l.id]=0);
+ $("#sims").innerHTML=L.map(l=>{const a=sc(l.id),mx=+(5-a).toFixed(1);return `<div class="sl"><div><b>${l.n}</b><br><small>Actual: ${a.toFixed(2)}</small></div><input type="range" min="0" max="${mx}" step="0.1" value="${Math.min(sim[l.id],mx)}" data-id="${l.id}" aria-label="Mejora en ${l.n}"><div id="v_${l.id}"></div></div>`}).join("");simOut()}
+const ns=id=>Math.min(5,sc(id)+sim[id]);
+function simOut(){L.forEach(l=>{const e=$("#v_"+l.id);if(e)e.textContent=`+${sim[l.id].toFixed(1)} → ${ns(l.id).toFixed(2)}`});
+ const g0=tot(sc),g1=tot(ns),rev=+$("#rev").value||0,cst=+$("#cst").value||0;
+ const dc=CW.reduce((s,i)=>s+sim[i],0)*0.01,dr=DW.reduce((s,i)=>s+sim[i],0)*0.012;
+ const rev1=rev*(1+dr),cst1=cst*(1-dc),m0=rev-cst,m1=rev1-cst1,p0=rev?m0/rev*100:0,p1=rev1?m1/rev1*100:0,f=x=>Math.round(x).toLocaleString("es");
+ const l0=lvl(g0),l1=lvl(g1);
+ $("#simout").innerHTML=`${chain(ns)}<div class="grid3"><div class="mini"><div class="note">Puntuación general</div><div class="kpi">${g0.toFixed(2)} → ${g1.toFixed(2)}</div><div>${l0[1]} ${l0[0]} → ${l1[1]} ${l1[0]}</div></div>
+ <div class="mini"><div class="note">Margen operativo</div><div class="kpi">${p0.toFixed(1)}% → ${p1.toFixed(1)}%</div><div class="${m1>=m0?"pos":"neg"}">Utilidad: ${f(m0)} → ${f(m1)} (${m1>=m0?"+":""}${f(m1-m0)})</div></div>
+ <div class="mini"><div class="note">Supuestos del modelo</div><div>Cada punto ganado en logística interna, operaciones, logística externa, compras o infraestructura reduce costos un 1%. Cada punto en marketing, posventa, tecnología o RR. HH. eleva ingresos un 1,2%.</div></div></div>`}
+$("#sims").oninput=e=>{if(e.target.dataset.id){sim[e.target.dataset.id]=+e.target.value;simOut()}};
+$("#rev").oninput=$("#cst").oninput=simOut;
+$("#rst").onclick=()=>{sim={};simUI()};
+$("#auto").onclick=()=>{sim={};L.forEach(l=>sim[l.id]=0);[...L].sort((a,b)=>sc(a.id)-sc(b.id)).slice(0,3).forEach(l=>sim[l.id]=Math.min(1,5-sc(l.id)));simUI()};
+$("#print").onclick=()=>{$("#pdate").textContent="Informe de diagnóstico: "+(S.co||"")+", "+new Date().toLocaleDateString("es",{day:"numeric",month:"long",year:"numeric"});window.print()};
+$("#again").onclick=()=>{init();["co","nw"].forEach(i=>$("#"+i).value="");$("#sec").value="";$("#nw").oninput();tabs();show("s1")};
+init();tabs();show("s1");
+</script>
+</body>
+</html>
